@@ -1,70 +1,75 @@
 package com.sarxos.ocr.sikulix;
 
+import com.sarxos.ocr.sikulix.util.PatternUtils;
+import org.sikuli.script.Pattern;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.sikuli.script.Pattern;
-
-import com.sarxos.ocr.sikulix.util.U;
+import java.io.File;
+import java.io.Serializable;
 
 
 /**
  * Single glyph to be recognized by OCR.
- * 
+ *
  * @author Bartosz Firyn (SarXos)
  */
 @XmlRootElement(name = "glyph")
 @XmlAccessorType(XmlAccessType.FIELD)
-public class Glyph {
+public class Glyph implements Serializable {
+    private transient Pattern pattern = null;
+    private transient String path = null;
 
-	private transient Pattern pattern = null;
+    /**
+     * Percentage similarity value.
+     */
+    @XmlAttribute(name = "similarity")
+    private int similarity = 95;
+    /**
+     * Character representing the glyph.
+     */
+    @XmlAttribute(name = "char")
+    private String character = null;
+    /**
+     * Image filename.
+     */
+    @XmlAttribute(name = "image")
+    private String file = null;
+    /**
+     * Relative image path.
+     */
 
-	/**
-	 * Percentage similarity value.
-	 */
-	@XmlAttribute(name = "similarity")
-	private int similarity = 95;
+    public Glyph() {}
 
-	/**
-	 * Character representing the glyph.
-	 */
-	@XmlAttribute(name = "char")
-	private String character = null;
+    public Glyph(String character, String imageFileName, int similarity) {
+        this.character = character;
+        this.file = imageFileName;
+        this.similarity = similarity;
+    }
 
-	/**
-	 * Image filename.
-	 */
-	@XmlAttribute(name = "image")
-	private String file = null;
+    public Pattern getPattern() {
+        if (pattern == null) {
+            pattern = PatternUtils.pattern(path, (float) similarity / 100);
+        }
+        return pattern;
+    }
 
-	/**
-	 * Relative image path.
-	 */
-	private transient String path = null;
+    public String getCharacter() {
+        return character;
+    }
 
-	public Pattern getPattern() {
-		if (pattern == null) {
-			pattern = U.pattern(path, (float) similarity / 100);
-		}
-		return pattern;
-	}
+    public String getFile() {
+        return file;
+    }
 
-	public String getCharacter() {
-		return character;
-	}
+    public void relativize(String path) {
+        this.path = path + File.separatorChar + file;
+    }
 
-	public String getFile() {
-		return file;
-	}
-
-	@Override
-	public String toString() {
-		return "glyph[" + character + "](" + file + ")";
-	}
-
-	public void relativize(String path) {
-		this.path = path + "/" + file;
-	}
+    @Override
+    public String toString() {
+        return "glyph[" + character + "](" + file + ")";
+    }
 }

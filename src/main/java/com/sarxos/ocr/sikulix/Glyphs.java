@@ -1,124 +1,97 @@
 package com.sarxos.ocr.sikulix;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
+import org.apache.commons.io.FileUtils;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
-
-import org.apache.commons.io.FileUtils;
+import java.io.File;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
- * Read glyphs.
- * 
+ * Read glyphList.
+ *
  * @author Bartosz Firyn (SarXos)
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(name = "glyphs")
-public class Glyphs {
+public class Glyphs implements Serializable {
+    /**
+     * Classes to be deserialized by JAXB
+     */
+    private static final Class<?>[] CLASSES = new Class[] {
+            Glyphs.class,
+            Glyph.class,
+    };
 
-	/**
-	 * Classes to be deserialized by JAXB
-	 */
-	private static final Class<?>[] CLASSES = new Class[] {
-		Glyphs.class,
-		Glyph.class,
-	};
+    /**
+     * Single glyph element to be marshaled as XML element.
+     */
+    @XmlElement(name = "glyph")
+    private List<Glyph> glyphList = new ArrayList<Glyph>();
 
-	/**
-	 * Static instance.
-	 */
-	private static Glyphs instance = new Glyphs();
+    public static List<Glyph> load(String name) {
+        File path = new File(name);
+        if (path.exists()) {
+            if (path.isDirectory()) {
+                return loadFromDir(path);
+            } else {
+                return loadFromZIP(path);
+            }
+        } else {
+            throw new IllegalArgumentException("Path " + name + " does not exist");
+        }
+    }
 
-	/**
-	 * XML unmarshaller.
-	 */
-	private transient Unmarshaller unmarshaller = null;
+    public void save(String fileName) {
+        try {
+            JAXBContext context = JAXBContext.newInstance(CLASSES);
+            Marshaller marshaller = context.createMarshaller();
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+            marshaller.marshal(this, new File(fileName));
+        } catch (JAXBException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
-	/**
-	 * Single glyph element to be marshalled as XML element.
-	 */
-	@XmlElement(name = "glyph")
-	private List<Glyph> glyphs = null;
+    public List<Glyph> getGlyphList() {
+        return glyphList;
+    }
 
-	/**
-	 * Constructor required by JAXB. It should not be used.
-	 */
-	public Glyphs() {
-		try {
-			JAXBContext context = JAXBContext.newInstance(CLASSES);
-			unmarshaller = context.createUnmarshaller();
-		} catch (JAXBException e) {
-			e.printStackTrace();
-		}
-	}
+    private static List<Glyph> loadFromDir(File path) {
+        String root = path.getAbsolutePath();
 
-	/**
-	 * Get static Glyphs instance.
-	 * 
-	 * @return
-	 */
-	public static Glyphs getInstance() {
-		return instance;
-	}
+        File p = new File(root + "/glyphs.xml");
+        if (!p.exists()) {
+            throw new IllegalStateException("Missing glyphList file in " + path);
+        }
 
-	public List<Glyph> getGlyphs() {
-		return glyphs;
-	}
+        try {
+            JAXBContext context = JAXBContext.newInstance(CLASSES);
+            Unmarshaller unmarshaller = context.createUnmarshaller();
+            List<Glyph> loadedGlyphs
+                    = ((Glyphs) (unmarshaller.unmarshal(FileUtils.openInputStream(p)))).getGlyphList();
+            for (Glyph g : loadedGlyphs) {
+                g.relativize(root);
+            }
+            return loadedGlyphs;
+        } catch (JAXBException e) {
+            throw new IllegalStateException(e);
+        } catch (IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
-	public List<Glyph> load(String name) {
-		File path = new File(name);
-		if (path.exists()) {
-			if (path.isDirectory()) {
-				return loadFromDir(path);
-			} else {
-				return loadFromZIP(path);
-			}
-		} else {
-			throw new RuntimeException("Path " + name + " does not exist");
-		}
-	}
-
-	private List<Glyph> loadFromDir(File path) {
-
-		String root = path.getAbsolutePath();
-
-		File p = new File(root + "/glyphs.xml");
-		if (!p.exists()) {
-			throw new RuntimeException("Missing glyphs file in " + path);
-		}
-
-		Object o = null;
-		try {
-			o = unmarshaller.unmarshal(FileUtils.openInputStream(p));
-		} catch (JAXBException e) {
-			throw new RuntimeException(e);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-
-		List<Glyph> glyphs = ((Glyphs) o).getGlyphs();
-		for (Glyph g : glyphs) {
-			g.relativize(root);
-		}
-
-		return glyphs;
-	}
-
-	private static List<Glyph> loadFromZIP(File path) {
-		throw new RuntimeException("Not yet implemented");
-	}
-
-	public static void main(String[] args) {
-		for (Glyph g : Glyphs.getInstance().load("src/main/resources/glyphs/numbers")) {
-			System.out.println(g);
-		}
-	}
+    private static List<Glyph> loadFromZIP(File path) {
+        throw new UnsupportedOperationException();
+    }
 }
