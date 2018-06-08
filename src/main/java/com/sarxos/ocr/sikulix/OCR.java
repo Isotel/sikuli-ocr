@@ -1,20 +1,18 @@
 package com.sarxos.ocr.sikulix;
 
+import org.sikuli.script.Finder;
 import org.sikuli.script.Match;
 import org.sikuli.script.Region;
+import org.sikuli.script.ScreenImage;
 
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.FutureTask;
 
 
 /**
@@ -23,17 +21,13 @@ import java.util.concurrent.FutureTask;
  *
  * @author Bartosz Firyn (SarXos)
  */
+@SuppressWarnings("WeakerAccess")
 public class OCR {
 
     /**
      * Default path for glyphs def storage.
      */
     private static String storage = "data/glyphs";
-
-    /**
-     * Execution service.
-     */
-    private static ExecutorService executor = Executors.newCachedThreadPool(new DaemonThreadFactory());
 
     /**
      * Specs cache.
@@ -102,45 +96,60 @@ public class OCR {
      *         region to read text from
      * @return Recognized text as String
      */
-    private String read(Region region) {
+    public String read(Region region) {
 
         if (region.getThrowException()) {
             region.setThrowException(false);
         }
 
-        Map<Match, Glyph> mapping = new HashMap<Match, Glyph>();
-        List<Match> matches = new ArrayList<Match>();
+        List<CharacterMatch> matches = new ArrayList<CharacterMatch>();
 
-        List<FutureTask<List<Match>>> futures = new ArrayList<FutureTask<List<Match>>>();
+        ScreenImage screenImage = region.getScreen().capture(region.x, region.y, region.w, region.h);
 
         for (Glyph g : glyphs) {
-            FutureTask<List<Match>> future = new FutureTask<List<Match>>(
-                    new ParallelMatcher(g, region, mapping));
-            futures.add(future);
-            executor.execute(future);
-        }
-
-        for (FutureTask<List<Match>> future : futures) {
-            Collection<Match> mc;
-            try {
-                if ((mc = future.get()) != null) {
-                    matches.addAll(mc);
-                }
-            } catch (ExecutionException e) {
-                /* intentionally empty */
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            Finder finder = new Finder(screenImage);
+            finder.findAll(g.getPattern());
+            while (finder.hasNext()) {
+                matches.add(new CharacterMatch(finder.next(), g.getCharacter()));
             }
         }
 
         Collections.sort(matches, new MatchesComparator());
 
         StringBuilder sb = new StringBuilder();
-        for (Match m : matches) {
-            sb.append(mapping.get(m).getCharacter());
+        for (CharacterMatch m : matches) {
+            sb.append(m.character);
         }
 
         return sb.toString();
+    }
+
+    /**
+     * Comparator used to sort matches position on x-axis.
+     *
+     * @author Bartosz Firyn (SarXos)
+     */
+    public static class MatchesComparator implements Comparator<Match> {
+
+        @Override
+        public int compare(Match a, Match b) {
+            if (a.x < b.x) {
+                return -1;
+            } else if (a.x > b.x) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    }
+
+    public static class CharacterMatch extends Match {
+        public final String character;
+
+        CharacterMatch(Match match, String character) {
+            super(match);
+            this.character = character;
+        }
     }
 
     /**

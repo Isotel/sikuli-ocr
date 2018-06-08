@@ -5,7 +5,7 @@
 
     <groupId>com.sarxos</groupId>
     <artifactId>sikuli-ocr</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.4-SNAPSHOT</version>
 
     <name>Sikuli OCR</name>
     <description>Sikuli-based OCR engine. It extracts texts from what you see on the screen.</description>
