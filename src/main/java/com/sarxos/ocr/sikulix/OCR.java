@@ -112,6 +112,7 @@ public class OCR {
             while (finder.hasNext()) {
                 matches.add(new CharacterMatch(finder.next(), g.getCharacter()));
             }
+            finder.destroy();
         }
 
         Collections.sort(matches, new MatchesComparator());

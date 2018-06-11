@@ -1,7 +1,5 @@
 package com.sarxos.ocr.sikulix;
 
-import org.apache.commons.io.FileUtils;
-
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
@@ -11,6 +9,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -79,7 +78,7 @@ public class Glyphs implements Serializable {
             JAXBContext context = JAXBContext.newInstance(CLASSES);
             Unmarshaller unmarshaller = context.createUnmarshaller();
             List<Glyph> loadedGlyphs
-                    = ((Glyphs) (unmarshaller.unmarshal(FileUtils.openInputStream(p)))).getGlyphList();
+                    = ((Glyphs) (unmarshaller.unmarshal(new FileInputStream(p)))).getGlyphList();
             for (Glyph g : loadedGlyphs) {
                 g.relativize(root);
             }

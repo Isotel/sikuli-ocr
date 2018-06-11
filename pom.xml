@@ -5,7 +5,7 @@
 
     <groupId>com.sarxos</groupId>
     <artifactId>sikuli-ocr</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.6-SNAPSHOT</version>
 
     <name>Sikuli OCR</name>
     <description>Sikuli-based OCR engine. It extracts texts from what you see on the screen.</description>
@@ -53,11 +53,6 @@
             <version>1.1.0</version>
         </dependency>
         <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-            <version>2.3</version>
-        </dependency>
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>4.10</version>
@@ -102,6 +97,18 @@
                 <configuration>
                     <source>1.6</source>
                     <target>1.6</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.0.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>com.sarxos.ocr.sikulix.util.PatternUtils</mainClass>
+                        </manifest>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>
